@@ -1,0 +1,40 @@
+services:
+  coworking-db:
+    image: postgres:18.1-alpine
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${PG_USER}
+      - POSTGRES_PASSWORD=${PG_PASSWORD}
+      - POSTGRES_DB=${PG_DB_NAME}
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $$PG_USER -d $$POSTGRES_DB" ]
+      interval: 5s
+      timeout: 5s
+      start_period: 5s
+      retries: 5
+    ports:
+      - "5433:5432"
+    volumes:
+      - coworking-vol:/var/lib/postgresql
+
+  migrations:
+      image: migrate/migrate:v4.19.1
+      volumes:
+        - ./migrations:/migrations
+      depends_on:
+        coworking-db:
+          condition: service_healthy
+
+#  backend:
+#    build: ./
+#    ports:
+#      - "8080:8080"
+#    restart: always
+#    depends_on:
+#      coworking-db:
+#        condition: service_healthy
+
+
+volumes:
+  coworking-vol:
