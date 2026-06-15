@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/dirijable/coworking-api/internal/features/domain"
-	"github.com/dirijable/coworking-api/internal/features/model"
-	service2 "github.com/dirijable/coworking-api/internal/features/room/service"
-	"github.com/dirijable/coworking-api/internal/features/service/errorx"
-	"github.com/dirijable/coworking-api/internal/features/service/mapper"
+	"github.com/dirijable/coworking-api/internal/domain"
+	"github.com/dirijable/coworking-api/internal/errorsx/service"
+	"github.com/dirijable/coworking-api/internal/model"
+	"github.com/dirijable/coworking-api/internal/service/mapper"
+	"github.com/dirijable/coworking-api/internal/service/validator"
+	"github.com/dirijable/coworking-api/pkg/postgres/transactor"
 	"github.com/google/uuid"
 )
 
@@ -21,32 +22,42 @@ type Repository interface {
 }
 
 type RoomService struct {
-	repo Repository
+	repo      Repository
+	txManager transactor.Transactor
 }
 
-func NewService(repo Repository) *RoomService {
+func NewService(repo Repository, txManager transactor.Transactor) *RoomService {
 	return &RoomService{
-		repo: repo,
+		repo:      repo,
+		txManager: txManager,
 	}
 }
 
-func (s *RoomService) Create(ctx context.Context, room domain.Room) (domain.Room, error) {
-	if err := service2.validate(room); err != nil {
+func (s *RoomService) Create(ctx context.Context, dRoom domain.Room) (domain.Room, error) {
+	if err := validator.Validate(dRoom); err != nil {
 		return domain.Room{}, fmt.Errorf("validate room: %w", err)
 	}
-	dRoom := mapper.DomainToModel(room)
-	exist, err := s.repo.ExistByName(ctx, dRoom)
+	mRoom := mapper.DomainToModel(dRoom)
+	var createdDomainRoom domain.Room
+	err := s.txManager.WithinTransaction(ctx, func(txCtx context.Context) error {
+		exist, err := s.repo.ExistByName(txCtx, mRoom)
+		if err != nil {
+			return fmt.Errorf("conflict check: %w", err)
+		}
+		if exist {
+			return service.ErrConflict
+		}
+		createdModelRoom, err := s.repo.Create(txCtx, mRoom)
+		if err != nil {
+			return fmt.Errorf("create room: %w", err)
+		}
+		createdDomainRoom = mapper.ModelToDomain(createdModelRoom)
+		return nil
+	})
 	if err != nil {
-		return domain.Room{}, fmt.Errorf("conflict check: %w", err)
+		return domain.Room{}, err
 	}
-	if exist {
-		return domain.Room{}, errorx.ErrConflict
-	}
-	createdRoom, err := s.repo.Create(ctx, dRoom)
-	if err != nil {
-		return domain.Room{}, fmt.Errorf("create room: %w", err)
-	}
-	return mapper.ModelToDomain(createdRoom), nil
+	return createdDomainRoom, nil
 }
 
 func (s *RoomService) FindById(ctx context.Context, id uuid.UUID) (domain.Room, error) {
