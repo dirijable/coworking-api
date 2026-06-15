@@ -6,3 +6,11 @@ server:
     write: 10s
     idle: 30s
     shutdown: 15s
+
+logger:
+  level: debug
+  format: yaml
+  outputs:
+    - console
+    - file
+  folder: ./var/logger/
