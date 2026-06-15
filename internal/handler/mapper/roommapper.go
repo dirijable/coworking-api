@@ -1,8 +1,8 @@
-package handler
+package mapper
 
 import (
-	"github.com/dirijable/coworking-api/internal/features/room/domain"
-	"github.com/dirijable/coworking-api/internal/features/room/dto"
+	"github.com/dirijable/coworking-api/internal/domain"
+	"github.com/dirijable/coworking-api/internal/dto"
 )
 
 func RequestToDomain(req dto.RoomRequestDTO) domain.Room {

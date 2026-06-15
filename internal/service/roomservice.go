@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/dirijable/coworking-api/internal/core/error/apperror"
-	"github.com/dirijable/coworking-api/internal/features/room/domain"
-	"github.com/dirijable/coworking-api/internal/features/room/model"
+	"github.com/dirijable/coworking-api/internal/features/domain"
+	"github.com/dirijable/coworking-api/internal/features/model"
+	service2 "github.com/dirijable/coworking-api/internal/features/room/service"
+	"github.com/dirijable/coworking-api/internal/features/service/errorx"
+	"github.com/dirijable/coworking-api/internal/features/service/mapper"
 	"github.com/google/uuid"
 )
 
@@ -29,22 +31,22 @@ func NewService(repo Repository) *RoomService {
 }
 
 func (s *RoomService) Create(ctx context.Context, room domain.Room) (domain.Room, error) {
-	if err := validate(room); err != nil {
+	if err := service2.validate(room); err != nil {
 		return domain.Room{}, fmt.Errorf("validate room: %w", err)
 	}
-	dRoom := DomainToModel(room)
+	dRoom := mapper.DomainToModel(room)
 	exist, err := s.repo.ExistByName(ctx, dRoom)
 	if err != nil {
 		return domain.Room{}, fmt.Errorf("conflict check: %w", err)
 	}
 	if exist {
-		return domain.Room{}, apperror.ErrConflict
+		return domain.Room{}, errorx.ErrConflict
 	}
 	createdRoom, err := s.repo.Create(ctx, dRoom)
 	if err != nil {
 		return domain.Room{}, fmt.Errorf("create room: %w", err)
 	}
-	return ModelToDomain(createdRoom), nil
+	return mapper.ModelToDomain(createdRoom), nil
 }
 
 func (s *RoomService) FindById(ctx context.Context, id uuid.UUID) (domain.Room, error) {
@@ -52,7 +54,7 @@ func (s *RoomService) FindById(ctx context.Context, id uuid.UUID) (domain.Room, 
 	if err != nil {
 		return domain.Room{}, fmt.Errorf("find by id: %w", err)
 	}
-	return ModelToDomain(room), nil
+	return mapper.ModelToDomain(room), nil
 }
 
 func (s *RoomService) FindAll(ctx context.Context) ([]domain.Room, error) {
@@ -62,7 +64,7 @@ func (s *RoomService) FindAll(ctx context.Context) ([]domain.Room, error) {
 	}
 	dRooms := make([]domain.Room, 0, len(mRooms))
 	for _, room := range mRooms {
-		dRooms = append(dRooms, ModelToDomain(room))
+		dRooms = append(dRooms, mapper.ModelToDomain(room))
 	}
 	return dRooms, nil
 }

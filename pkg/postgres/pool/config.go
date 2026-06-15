@@ -1,4 +1,4 @@
-package pgpool
+package pool
 
 import (
 	"fmt"

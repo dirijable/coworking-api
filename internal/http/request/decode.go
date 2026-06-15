@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/dirijable/coworking-api/internal/core/error/apperror"
+	"github.com/dirijable/coworking-api/internal/errorsx/service"
 	"github.com/go-playground/validator/v10"
 )
 
@@ -32,5 +32,5 @@ func extractValidationErrors(validationErrors *validator.ValidationErrors) error
 	for _, ve := range *validationErrors {
 		errs[ve.Field()] = ve.Tag()
 	}
-	return fmt.Errorf("%w: %w", apperror.ErrBadRequest, apperror.ValidationError{Fields: errs})
+	return fmt.Errorf("%w: %w", service.ErrBadRequest, service.ValidationError{Fields: errs})
 }

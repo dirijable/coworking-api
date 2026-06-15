@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dirijable/coworking-api/internal/core/error/apierror"
-	"github.com/dirijable/coworking-api/internal/core/error/apperror"
+	"github.com/dirijable/coworking-api/internal/errorsx/api"
+	"github.com/dirijable/coworking-api/internal/errorsx/service"
 )
 
 func SendErrorResponse(rw http.ResponseWriter, err error) {
@@ -16,16 +16,16 @@ func SendErrorResponse(rw http.ResponseWriter, err error) {
 		details    = make(map[string]string)
 	)
 	switch {
-	case errors.Is(err, apperror.ErrBadRequest):
+	case errors.Is(err, service.ErrBadRequest):
 		msg = "Validation error"
 		statusCode = http.StatusBadRequest
-		if ve, ok := errors.AsType[apperror.ValidationError](err); ok {
+		if ve, ok := errors.AsType[service.ValidationError](err); ok {
 			details = ve.Fields
 		}
-	case errors.Is(err, apperror.ErrConflict):
+	case errors.Is(err, service.ErrConflict):
 		msg = "Resource already exist"
 		statusCode = http.StatusConflict
-	case errors.Is(err, apperror.ErrNotFound):
+	case errors.Is(err, service.ErrNotFound):
 		msg = "Resource not found"
 		statusCode = http.StatusNotFound
 	default:
@@ -36,7 +36,7 @@ func SendErrorResponse(rw http.ResponseWriter, err error) {
 }
 
 func sendError(rw http.ResponseWriter, msg string, statusCode int, details map[string]string) {
-	apiError := apierror.APIError{
+	apiError := api.APIError{
 		Msg:       msg,
 		Timestamp: time.Now(),
 		Details:   details,

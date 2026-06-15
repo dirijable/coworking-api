@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"net/http"
 
-	httpreq "github.com/dirijable/coworking-api/internal/core/http/request"
-	httpresp "github.com/dirijable/coworking-api/internal/core/http/response"
-	"github.com/dirijable/coworking-api/internal/features/room/domain"
-	"github.com/dirijable/coworking-api/internal/features/room/dto"
+	"github.com/dirijable/coworking-api/internal/domain"
+	"github.com/dirijable/coworking-api/internal/dto"
+	"github.com/dirijable/coworking-api/internal/handler/extractor"
+	"github.com/dirijable/coworking-api/internal/handler/mapper"
+	httpreq "github.com/dirijable/coworking-api/internal/http/request"
+	httpresp "github.com/dirijable/coworking-api/internal/http/response"
 	"github.com/google/uuid"
 )
 
@@ -35,7 +37,7 @@ func (h *RoomHTTPHandler) Create(rw http.ResponseWriter, r *http.Request) {
 		httpresp.SendErrorResponse(rw, err)
 		return
 	}
-	domainRoom := RequestToDomain(reqDTO)
+	domainRoom := mapper.RequestToDomain(reqDTO)
 	createdRoom, err := h.srv.Create(r.Context(), domainRoom)
 	if err != nil {
 		httpresp.SendErrorResponse(rw, err)
@@ -44,13 +46,13 @@ func (h *RoomHTTPHandler) Create(rw http.ResponseWriter, r *http.Request) {
 
 	locationPath := fmt.Sprintf("%s/%s", r.URL.Path, createdRoom.ID.String())
 	rw.Header().Set("Location", locationPath)
-	if err = httpresp.SendJSONResponse(rw, http.StatusCreated, DomainToResponse(createdRoom)); err != nil {
+	if err = httpresp.SendJSONResponse(rw, http.StatusCreated, mapper.DomainToResponse(createdRoom)); err != nil {
 		return
 	}
 }
 
 func (h *RoomHTTPHandler) FindById(rw http.ResponseWriter, r *http.Request) {
-	id, err := pathUUID(r, "id")
+	id, err := extractor.PathUUID(r, "id")
 	if err != nil {
 		httpresp.SendErrorResponse(rw, err)
 		return
@@ -60,7 +62,7 @@ func (h *RoomHTTPHandler) FindById(rw http.ResponseWriter, r *http.Request) {
 		httpresp.SendErrorResponse(rw, err)
 		return
 	}
-	if err = httpresp.SendJSONResponse(rw, http.StatusOK, DomainToResponse(domainRoom)); err != nil {
+	if err = httpresp.SendJSONResponse(rw, http.StatusOK, mapper.DomainToResponse(domainRoom)); err != nil {
 		return
 	}
 }
@@ -73,7 +75,7 @@ func (h *RoomHTTPHandler) FindAll(rw http.ResponseWriter, r *http.Request) {
 	}
 	dtoRooms := make([]dto.RoomResponseDTO, 0, len(domainRooms))
 	for _, dr := range domainRooms {
-		dtoRooms = append(dtoRooms, DomainToResponse(dr))
+		dtoRooms = append(dtoRooms, mapper.DomainToResponse(dr))
 	}
 	if err = httpresp.SendJSONResponse(rw, http.StatusOK, dtoRooms); err != nil {
 		return
@@ -81,7 +83,7 @@ func (h *RoomHTTPHandler) FindAll(rw http.ResponseWriter, r *http.Request) {
 }
 
 func (h *RoomHTTPHandler) DeleteById(rw http.ResponseWriter, r *http.Request) {
-	id, err := pathUUID(r, "id")
+	id, err := extractor.PathUUID(r, "id")
 	if err != nil {
 		httpresp.SendErrorResponse(rw, err)
 		return

@@ -5,8 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/dirijable/coworking-api/internal/core/error/apperror"
-	"github.com/dirijable/coworking-api/internal/features/room/model"
+	"github.com/dirijable/coworking-api/internal/errorsx/service"
+	"github.com/dirijable/coworking-api/internal/model"
+	"github.com/dirijable/coworking-api/pkg/postgres/transactor"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -36,16 +37,18 @@ func (r *PostgresRepository) ExistByName(ctx context.Context, room model.Room) (
 }
 
 func (r *PostgresRepository) Create(ctx context.Context, room model.Room) (model.Room, error) {
+	db := transactor.GetExecutor(ctx, r.Pool)
 	query := `INSERT INTO rooms (name, capacity)
 			  VALUES ($1, $2)
 			  RETURNING id;`
-	err := r.Pool.QueryRow(ctx, query,
+	err := db.QueryRow(ctx, query,
 		room.Name,
 		room.Capacity,
 	).Scan(&room.ID)
 	if err != nil {
 		return model.Room{}, fmt.Errorf("insert room room: %w", err)
 	}
+
 	return room, nil
 }
 
@@ -61,7 +64,7 @@ func (r *PostgresRepository) FindById(ctx context.Context, id uuid.UUID) (model.
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return model.Room{}, apperror.ErrNotFound
+			return model.Room{}, service.ErrNotFound
 		}
 		return model.Room{}, fmt.Errorf("db query 'find room by id': %w", err)
 	}
@@ -91,7 +94,7 @@ func (r *PostgresRepository) DeleteById(ctx context.Context, id uuid.UUID) error
 		return fmt.Errorf("delete room: %w", err)
 	}
 	if cmdTag.RowsAffected() == 0 {
-		return apperror.ErrNotFound
+		return service.ErrNotFound
 	}
 	return nil
 }

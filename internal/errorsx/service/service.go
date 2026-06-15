@@ -1,4 +1,4 @@
-package apperror
+package service
 
 import (
 	"errors"
@@ -17,4 +17,8 @@ type ValidationError struct {
 
 func (v ValidationError) Error() string {
 	return fmt.Sprintf("validation failed with %d errors", len(v.Fields))
+}
+
+func (v ValidationError) Unwrap() error {
+	return ErrBadRequest
 }

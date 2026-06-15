@@ -1,13 +1,13 @@
-package service
+package validator
 
 import (
 	"errors"
 	"strings"
 
-	"github.com/dirijable/coworking-api/internal/features/room/domain"
+	"github.com/dirijable/coworking-api/internal/domain"
 )
 
-func validate(room domain.Room) error {
+func Validate(room domain.Room) error {
 	if strings.TrimSpace(room.Name) == "" {
 		return errors.New("empty name")
 	}
